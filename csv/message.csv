@@ -1,0 +1,23 @@
+key,name_L1,name_L2,name_L3
+app_title,RQ共有通信実験,RQ Realtime Share Test,RQ即時共享測試
+label_language,言語,Language,語言
+label_room,ルームID,Room ID,房間ID
+label_connection_status,接続状態,Connection,連線狀態
+label_save_status,保存状態,Save Status,儲存狀態
+label_online_status,ネットワーク,Network,網路
+btn_join,参加,Join,加入
+btn_clear,クリア,Clear,清除
+msg_idle,未接続,Idle,未連線
+msg_connecting,接続中,Connecting,連線中
+msg_connected,接続済み,Connected,已連線
+msg_saving,保存中,Saving,儲存中
+msg_saved,保存完了,Saved,已儲存
+msg_placeholder,ここに入力すると共有されます,Type here to share,在此輸入即可共享
+label_updated_by,更新者,Updated By,更新者
+label_updated_at,更新時刻,Updated At,更新時間
+msg_join_first,先にルームへ参加してください,Join a room first,請先加入房間
+msg_invalid_room,roomId は 3〜32 文字の英数字・-_ のみです,Use 3-32 letters numbers - _,roomId 僅可使用 3-32 位英數與 - _
+msg_error,エラー,Error,錯誤
+msg_online,オンライン,Online,在線
+msg_offline,オフライン,Offline,離線
+msg_unknown_user,不明,Unknown,未知

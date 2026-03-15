@@ -1,0 +1,71 @@
+<!doctype html>
+<html lang="ja">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#214c3d">
+  <meta name="description" content="Firebase Realtime Database based shared textbox experiment">
+  <link rel="manifest" href="./manifest.json">
+  <link rel="icon" href="./icons/icon-192.png" sizes="192x192" type="image/png">
+  <link rel="apple-touch-icon" href="./icons/icon-192.png">
+  <link rel="stylesheet" href="./css/style.css">
+  <title>RQ Adventurers' Inn</title>
+</head>
+<body>
+  <div class="app-shell">
+    <header class="hero">
+      <div>
+        <p class="eyebrow">RQ Adventurers' Inn</p>
+        <h1 id="appTitle">RQ共有通信実験</h1>
+      </div>
+      <label class="language-picker">
+        <span id="languageLabel">Language</span>
+        <select id="languageSelect" aria-label="Language"></select>
+      </label>
+    </header>
+
+    <main class="panel">
+      <section class="connection-card">
+        <div class="field-group">
+          <label for="roomInput" id="roomLabel">ルームID</label>
+          <input id="roomInput" name="room" type="text" maxlength="32" autocomplete="off" placeholder="test001">
+        </div>
+        <button id="joinButton" type="button">参加</button>
+        <dl class="status-grid">
+          <div>
+            <dt id="connectionStatusLabel">接続状態</dt>
+            <dd id="connectionStatus">未接続</dd>
+          </div>
+          <div>
+            <dt id="saveStatusLabel">保存状態</dt>
+            <dd id="saveStatus">保存完了</dd>
+          </div>
+        </dl>
+        <p id="errorMessage" class="error-text" hidden></p>
+      </section>
+
+      <section class="editor-card">
+        <textarea id="sharedTextarea" rows="12" disabled></textarea>
+      </section>
+
+      <footer class="meta-card">
+        <div class="meta-row">
+          <span id="updatedByLabel">更新者</span>
+          <strong id="updatedByValue">-</strong>
+        </div>
+        <div class="meta-row">
+          <span id="updatedAtLabel">更新時刻</span>
+          <strong id="updatedAtValue">-</strong>
+        </div>
+        <div class="meta-row">
+          <span id="onlineLabel">Network</span>
+          <strong id="onlineValue">offline</strong>
+        </div>
+        <button id="clearButton" type="button" class="secondary">クリア</button>
+      </footer>
+    </main>
+  </div>
+
+  <script type="module" src="./js/main.js"></script>
+</body>
+</html>
