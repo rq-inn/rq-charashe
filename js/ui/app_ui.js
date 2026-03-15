@@ -97,17 +97,19 @@ export function createAppUi({ store, i18n, sharedTextLogic, roomLogic }) {
       store.setState({ errorMessage: i18n.t("msg_invalid_room", store.getState().language) });
       return;
     }
-    store.setState({ errorMessage: "" });
+    store.setState({
+      roomId,
+      connectionStatus: "connecting",
+      saveStatus: "saved",
+      errorMessage: ""
+    });
     roomLogic.updateRoomQuery(roomId);
-    sharedTextLogic.joinRoom(roomId);
-  });
-
-  elements.textarea.addEventListener("input", (event) => {
-    sharedTextLogic.scheduleSave(event.target.value);
+    sharedTextLogic.reconnect();
   });
 
   elements.clearButton.addEventListener("click", () => {
-    sharedTextLogic.clearText();
+    elements.textarea.value = "";
+    elements.textarea.dispatchEvent(new Event("input", { bubbles: true }));
   });
 
   return {

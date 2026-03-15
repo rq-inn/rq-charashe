@@ -1,98 +1,142 @@
-import { saveSharedText, subscribeSharedText } from "./firebase_text_repo.js";
+export function createSharedTextLogic({
+  textarea,
+  getRoomId,
+  getUid,
+  subscribeSharedText,
+  saveSharedText
+}) {
+  if (!textarea) {
+    throw new Error("shared_text_logic: textarea is required");
+  }
 
-export function createSharedTextLogic({ database, store }) {
-  let unsubscribeRoom = null;
-  let saveTimer = null;
   let isApplyingRemote = false;
+  let debounceTimer = null;
+  let unsubscribe = null;
+  let lastRemoteValue = "";
 
-  function clearPendingTimer() {
-    if (saveTimer) {
-      window.clearTimeout(saveTimer);
-      saveTimer = null;
-    }
+  function normalizeRoomId(rawRoomId) {
+    if (typeof rawRoomId !== "string") return "";
+    return rawRoomId.trim();
   }
 
-  async function persistText(value) {
-    const { roomId, uid } = store.getState();
-    if (!roomId || !uid) {
-      return;
-    }
+  function normalizeText(rawText) {
+    return String(rawText ?? "");
+  }
 
-    store.setState({ saveStatus: "saving", errorMessage: "" });
-    await saveSharedText(database, roomId, {
-      value,
+  function buildPayload(text) {
+    return {
+      value: normalizeText(text),
       updatedAt: Date.now(),
-      updatedBy: uid
-    });
-    store.setState({ saveStatus: "saved", errorMessage: "" });
+      updatedBy: String(getUid?.() ?? "")
+    };
   }
 
-  function joinRoom(roomId) {
-    if (unsubscribeRoom) {
-      unsubscribeRoom();
-      unsubscribeRoom = null;
-    }
-    clearPendingTimer();
+  async function flushSave(text) {
+    const roomId = normalizeRoomId(getRoomId?.());
 
-    store.setState({
-      roomId,
-      connectionStatus: "connecting",
-      saveStatus: "saved",
-      errorMessage: ""
-    });
-
-    unsubscribeRoom = subscribeSharedText(
-      database,
-      roomId,
-      (data) => {
-        const nextValue = data?.value ?? "";
-        isApplyingRemote = true;
-        store.setState({
-          sharedText: nextValue,
-          remoteUpdatedAt: data?.updatedAt ?? null,
-          remoteUpdatedBy: data?.updatedBy ?? ""
-        });
-        isApplyingRemote = false;
-      },
-      (isOnline) => {
-        store.setState({
-          isOnline,
-          connectionStatus: isOnline ? "connected" : "idle"
-        });
-      }
-    );
-  }
-
-  function scheduleSave(value, delayMs = 400) {
-    store.setState({ sharedText: value });
-    if (isApplyingRemote) {
+    if (!roomId) {
+      console.warn("[shared_text_logic] save skipped: invalid roomId", getRoomId?.());
       return;
     }
 
-    clearPendingTimer();
-    saveTimer = window.setTimeout(() => {
-      persistText(value).catch((error) => {
-        console.error(error);
-        store.setState({ errorMessage: error.message, saveStatus: "idle" });
+    const payload = buildPayload(text);
+
+    console.log("[shared_text_logic] saving", {
+      roomId,
+      valueType: typeof payload.value,
+      updatedByType: typeof payload.updatedBy
+    });
+
+    await saveSharedText(roomId, payload);
+  }
+
+  function scheduleSave() {
+    if (isApplyingRemote) return;
+
+    const text = normalizeText(textarea.value);
+
+    if (debounceTimer) {
+      clearTimeout(debounceTimer);
+    }
+
+    debounceTimer = setTimeout(() => {
+      flushSave(text).catch((error) => {
+        console.error("[shared_text_logic] save failed", error);
       });
-    }, delayMs);
+    }, 400);
   }
 
-  function clearText() {
-    scheduleSave("");
+  function applyRemoteValue(remoteData) {
+    const remoteValue = normalizeText(remoteData?.value);
+
+    if (textarea.value === remoteValue && lastRemoteValue === remoteValue) {
+      return;
+    }
+
+    isApplyingRemote = true;
+    textarea.value = remoteValue;
+    lastRemoteValue = remoteValue;
+    isApplyingRemote = false;
   }
 
-  function dispose() {
-    clearPendingTimer();
-    if (unsubscribeRoom) {
-      unsubscribeRoom();
+  function bindInput() {
+    textarea.addEventListener("input", scheduleSave);
+  }
+
+  function unbindInput() {
+    textarea.removeEventListener("input", scheduleSave);
+  }
+
+  function startSubscription() {
+    const roomId = normalizeRoomId(getRoomId?.());
+
+    if (!roomId) {
+      console.warn("[shared_text_logic] subscribe skipped: invalid roomId", getRoomId?.());
+      return;
+    }
+
+    if (unsubscribe) {
+      unsubscribe();
+      unsubscribe = null;
+    }
+
+    console.log("[shared_text_logic] subscribe", { roomId });
+
+    unsubscribe = subscribeSharedText(roomId, (remoteData) => {
+      try {
+        applyRemoteValue(remoteData);
+      } catch (error) {
+        console.error("[shared_text_logic] applyRemoteValue failed", error);
+      }
+    });
+  }
+
+  function stopSubscription() {
+    if (unsubscribe) {
+      unsubscribe();
+      unsubscribe = null;
     }
   }
+
+  function reconnect() {
+    stopSubscription();
+    startSubscription();
+  }
+
+  function destroy() {
+    stopSubscription();
+    unbindInput();
+
+    if (debounceTimer) {
+      clearTimeout(debounceTimer);
+      debounceTimer = null;
+    }
+  }
+
+  bindInput();
 
   return {
-    joinRoom,
-    scheduleSave,
-    clearText,
-    dispose
+    reconnect,
+    destroy
   };
 }
